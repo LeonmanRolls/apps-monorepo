@@ -116,7 +116,9 @@ export const columns: ColumnDef<NameRow>[] = [
   },
   {
     id: 'expiryDate',
-    accessorFn: getShownExpiry,
+    // TanStack treats null as a value, so a missing expiry must be undefined to stay last in both directions.
+    accessorFn: (row) => getShownExpiry(row) ?? undefined,
+    sortUndefined: 'last',
     filterFn: matchesExpiry,
     header: ({ column }) => (
       <SortButton
