@@ -1,5 +1,13 @@
 # ENS Apps Monorepo - AI Agent Instructions
 
+## Pstack
+
+Lauren Tan's pstack skills are in `.cursor/skills/`. `.cursor/skills/PSTACK_SOURCE.md` records the repository, the commit, and the license.
+
+Read `.cursor/skills/poteto-mode/SKILL.md` at the start of a task and follow the playbook it selects. When a step names another skill, read that skill's `SKILL.md` before you follow it. Read a principle's leaf skill before you apply the principle.
+
+Before you call the work done, follow `.cursor/skills/principle-prove-it-works/SKILL.md`. Run the changed behavior and keep the evidence. For Manager, Explorer, or the API worker, follow `.cursor/skills/verify-ens-apps/SKILL.md`. When that map drifts from the apps, follow `.cursor/skills/maintain-verification-skill/SKILL.md`.
+
 ## Style Guide
 
 **[STYLEGUIDE.md](./STYLEGUIDE.md)** applies to every app, worker and package in
