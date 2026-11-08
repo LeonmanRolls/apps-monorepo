@@ -15,6 +15,8 @@ interface ImportMetaEnv {
   readonly VITE_TIME_TRAVEL?: string
   readonly VITE_TIME_TRAVEL_RPC?: string
   readonly VITE_DQA?: string
+  /** `1` replaces the address names read with the six-name expiry preview. */
+  readonly VITE_PREVIEW_EXPIRY_FIXTURE?: string
   readonly VITE_DQA_URL?: string
   readonly VITE_DQA_LINEAR_ISSUE?: string
   readonly VITE_USE_MOCK_WALLET?: string

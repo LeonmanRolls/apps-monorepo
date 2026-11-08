@@ -8,6 +8,7 @@ import { createQueryKey } from '@ens-apps/utils/tanstack-query/queryKey'
 import { okAsync, ResultAsync } from 'neverthrow'
 import type { Address } from 'viem'
 import { bigname } from '@/lib/bigname'
+import { previewAddressNames } from '@/preview/expirySortFixture'
 import {
   type AddressNameItem,
   byShownExpiry,
@@ -103,6 +104,7 @@ export const getAddressNames = (
     signal,
   }: Readonly<{ now?: Temporal.Instant; signal?: AbortSignal }> = {},
 ) =>
+  previewAddressNames() ??
   ResultAsync.combine([
     readAllNames(
       readNames,
