@@ -182,6 +182,37 @@ describe('addr names route paging', { timeout: 60_000 }, () => {
     expect(screen.getAllByText('last.eth')).toHaveLength(2)
   })
 
+  it('sorts dated names ahead of names with no expiry before taking the first page', async () => {
+    const user = userEvent.setup()
+    names.mockResolvedValue([
+      {
+        ...nameRows(1, 'dns')[0],
+        name: 'dns.com',
+        expiryDate: null,
+      },
+      {
+        ...nameRows(1, 'sub')[0],
+        name: 'sub.never.eth',
+        expiryDate: null,
+        parentExpiryDate: null,
+      },
+      ...nameRows(100),
+      {
+        ...nameRows(1)[0],
+        name: 'soon.eth',
+        expiryDate: new Date(Date.now() + MS_PER_DAY),
+      },
+    ])
+    renderRoute()
+    await screen.findByText('Showing 100 of 103', {}, SLOW)
+    expect(screen.getAllByText('dns.com').length).toBeGreaterThan(0)
+    await user.click(screen.getByRole('button', { name: 'Expiry' }))
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0]).toHaveTextContent('soon.eth')
+    expect(screen.queryByText('dns.com')).not.toBeInTheDocument()
+    expect(screen.queryByText('sub.never.eth')).not.toBeInTheDocument()
+  })
+
   it('keeps selection on visible rows as More expands the window and sorting moves them', async () => {
     const user = userEvent.setup()
     names.mockResolvedValue(nameRows(150))

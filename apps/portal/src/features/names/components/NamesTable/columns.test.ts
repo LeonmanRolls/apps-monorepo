@@ -154,6 +154,69 @@ describe('names table filters', () => {
     ])
   })
 
+  it('sorts soonest shown expiry first, with DNS names and non-expiring subnames last', () => {
+    const table = makeTable(
+      [
+        { ...row('dns.com', 'ENSv1', ['owner']), expiryDate: null },
+        {
+          ...row('later.eth', 'ENSv2', ['owner']),
+          expiryDate: new Date(Date.UTC(2031, 0, 1)),
+        },
+        {
+          ...row('sub.never.eth', 'ENSv1', ['manager']),
+          expiryDate: null,
+          parentExpiryDate: null,
+        },
+        {
+          ...row('soon.eth', 'ENSv2', ['owner']),
+          expiryDate: new Date(Date.UTC(2030, 0, 1)),
+        },
+        {
+          ...row('sub.parent.eth', 'ENSv1', ['manager']),
+          expiryDate: null,
+          parentExpiryDate: new Date(Date.UTC(2030, 6, 1)),
+        },
+      ],
+      [],
+      [{ id: 'expiryDate', desc: false }],
+    )
+    expect(
+      table.getSortedRowModel().rows.map((row) => row.original.name),
+    ).toEqual([
+      'soon.eth',
+      'sub.parent.eth',
+      'later.eth',
+      'dns.com',
+      'sub.never.eth',
+    ])
+  })
+
+  it('keeps names without an expiry last when expiry is sorted latest-first', () => {
+    const table = makeTable(
+      [
+        { ...row('dns.com', 'ENSv1', ['owner']), expiryDate: null },
+        {
+          ...row('later.eth', 'ENSv2', ['owner']),
+          expiryDate: new Date(Date.UTC(2031, 0, 1)),
+        },
+        {
+          ...row('sub.never.eth', 'ENSv1', ['manager']),
+          expiryDate: null,
+          parentExpiryDate: null,
+        },
+        {
+          ...row('soon.eth', 'ENSv2', ['owner']),
+          expiryDate: new Date(Date.UTC(2030, 0, 1)),
+        },
+      ],
+      [],
+      [{ id: 'expiryDate', desc: true }],
+    )
+    expect(
+      table.getSortedRowModel().rows.map((row) => row.original.name),
+    ).toEqual(['later.eth', 'soon.eth', 'dns.com', 'sub.never.eth'])
+  })
+
   it('sorts V2 roles by the displayed count instead of the relation count', () => {
     const table = makeTable(
       [
