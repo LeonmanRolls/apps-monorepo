@@ -507,6 +507,157 @@ const driveApi = async (dir) => {
   return body
 }
 
+const EXPIRY_ADDRESS = '0x1111111111111111111111111111111111111111'
+const EXPIRY_SOONEST = [
+  'soon.eth',
+  'parent.eth',
+  'sub.parent.eth',
+  'later.eth',
+  'dns.com',
+  'sub.never.eth',
+]
+const EXPIRY_LATEST = [
+  'later.eth',
+  'parent.eth',
+  'sub.parent.eth',
+  'soon.eth',
+  'dns.com',
+  'sub.never.eth',
+]
+
+const expiryName = (name, expiresAt, authority) => ({
+  name,
+  display_name: name,
+  namespace: 'ens',
+  namehash: `0x${'ab'.repeat(32)}`,
+  status: 'active',
+  authority,
+  relations: ['owner'],
+  is_primary: false,
+  ...(expiresAt
+    ? {
+        expires_at: expiresAt,
+        ...(authority === 'ens_v1' ? { ens_v1: { expires_at: expiresAt } } : {}),
+      }
+    : {}),
+})
+
+// Returned in an order that is not soonest-first. The page must sort them.
+const EXPIRY_NAMES = [
+  expiryName('dns.com', null, 'ens_v1'),
+  expiryName('later.eth', '1924992000', 'ens_v2'),
+  expiryName('sub.never.eth', null, 'ens_v1'),
+  expiryName('soon.eth', '1893456000', 'ens_v2'),
+  expiryName('sub.parent.eth', null, 'ens_v1'),
+  expiryName('parent.eth', '1909008000', 'ens_v1'),
+]
+
+const bignameEnvelope = (data) => ({
+  data,
+  page: {
+    cursor: null,
+    next_cursor: null,
+    page_size: 200,
+    total_count: data.length,
+    has_more: false,
+  },
+  meta: { as_of: {} },
+})
+
+const mockAddressNames = async (page) => {
+  await page.route('https://sepolia.api.bigname.sh/**', async (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith('/names')) {
+      const relation = url.searchParams.get('relation')
+      const include = url.searchParams.get('include') ?? ''
+      const data =
+        relation === 'former_owner' || include.includes('role_summary')
+          ? []
+          : EXPIRY_NAMES
+      await route.fulfill({ json: bignameEnvelope(data) })
+      return
+    }
+    if (url.pathname === '/v1/lookup') {
+      await route.fulfill({
+        json: bignameEnvelope([
+          {
+            input: { name: 'never.eth' },
+            kind: 'name',
+            status: 'ok',
+            record: {
+              name: 'never.eth',
+              display_name: 'never.eth',
+              namespace: 'ens',
+              namehash: `0x${'cd'.repeat(32)}`,
+              expires_at: null,
+              read_status: 'ok',
+            },
+          },
+        ]),
+      })
+      return
+    }
+    await route.fulfill({
+      status: 404,
+      json: {
+        error: {
+          code: 'not_found',
+          message: 'unmocked bigname route',
+          details: {},
+        },
+      },
+    })
+  })
+}
+
+const shownNames = async (page) => {
+  const labels = [...EXPIRY_SOONEST].sort((a, b) => b.length - a.length)
+  const rows = await page.getByRole('row').allTextContents()
+  return rows.slice(1).map((text) => {
+    const found = labels.find((name) => text.includes(name))
+    if (!found) throw new Error(`row did not name a fixture name: ${text}`)
+    return found
+  })
+}
+
+const driveExpirySort = async (page, dir) => {
+  const { expect } = createRequire(path.join(repoRoot, 'e2e/package.json'))(
+    '@playwright/test',
+  )
+  await mockAddressNames(page)
+  await page.goto(`${appUrl(apps.portal)}/addr/${EXPIRY_ADDRESS}/names`)
+  await page.getByRole('heading', { name: /Names \(6\)/ }).waitFor({
+    timeout: 60000,
+  })
+  await dismissOptional(page)
+  const assertShown = async (label, expected) => {
+    let actual = []
+    try {
+      await expect
+        .poll(async () => (actual = await shownNames(page)).join('\n'), {
+          timeout: 15000,
+        })
+        .toBe(expected.join('\n'))
+    } finally {
+      await page.screenshot({
+        path: path.join(dir, `${label}.png`),
+        fullPage: true,
+      })
+    }
+    return actual
+  }
+  await page.getByRole('button', { name: 'Expiry' }).click()
+  const soonest = await assertShown('soonest', EXPIRY_SOONEST)
+  await page.getByRole('button', { name: 'Expiry' }).click()
+  const latest = await assertShown('latest', EXPIRY_LATEST)
+  return {
+    address: EXPIRY_ADDRESS,
+    mocked: 'https://sepolia.api.bigname.sh',
+    soonest,
+    latest,
+  }
+}
+
 const drive = async (feature) => {
   await mkdir(evidenceDir, { recursive: true })
   const state = await readState()
@@ -532,7 +683,9 @@ const drive = async (feature) => {
     const result =
       feature === 'portal-name-search'
         ? await drivePortal(page, label, dir)
-        : await driveManager(page, label, dir)
+        : feature === 'portal-address-expiry-sort'
+          ? await driveExpirySort(page, dir)
+          : await driveManager(page, label, dir)
     await writeFile(path.join(dir, 'proof.json'), `${JSON.stringify(result, null, 2)}\n`)
     console.log(JSON.stringify({ feature, ...result }))
   } finally {
@@ -597,7 +750,7 @@ commands:
   build [portal|manager|api-worker]
   launch <manager|portal|api-worker>
   doctor <manager|portal|api-worker>
-  drive <manager-check-availability|portal-name-search|api-worker-health>
+  drive <manager-check-availability|portal-name-search|portal-address-expiry-sort|api-worker-health>
   test
   cleanup
   evidence`)
@@ -626,6 +779,7 @@ const main = async () => {
     if (
       arg !== 'manager-check-availability' &&
       arg !== 'portal-name-search' &&
+      arg !== 'portal-address-expiry-sort' &&
       arg !== 'api-worker-health'
     ) {
       fail('drive needs a feature name from the feature map')

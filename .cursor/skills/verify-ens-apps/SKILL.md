@@ -74,6 +74,7 @@ The report includes `git rev-parse HEAD` from launch. These read-only paths need
 ```bash
 node .cursor/skills/verify-ens-apps/scripts/verify.mjs drive manager-check-availability
 node .cursor/skills/verify-ens-apps/scripts/verify.mjs drive portal-name-search
+node .cursor/skills/verify-ens-apps/scripts/verify.mjs drive portal-address-expiry-sort
 node .cursor/skills/verify-ens-apps/scripts/verify.mjs drive api-worker-health
 ```
 
@@ -110,6 +111,7 @@ The helper writes under `/tmp/verify-ens-apps/$VERIFY_RUN_ID/evidence`.
 - `doctor-*.json` holds pid, port, HTTP status, heading or health body, and the git commit.
 - `manager-check-availability/result.png` is the available card. `register.png` and `register.aria.txt` are the registration quote after the click.
 - `portal-name-search/result.png` is the suggestion. `register.png` and `register.aria.txt` are the registration form after the click. Choosing an available suggestion opens `/register?name=<name>`, not the name overview.
+- `portal-address-expiry-sort/soonest.png` is the table after the first Expiry click. `latest.png` is the second click. `proof.json` records both orders. This drive answers `https://sepolia.api.bigname.sh` with a fixed six-name list. It does not read live Sepolia or mainnet names.
 - `api-worker-health/health.json` is the response body.
 
 Capture the action and the next page, not only the last screen. A card that says `Couldn't check this name` is a failed check. A `Registered` card for the generated label is a failed check, not a pass. Do not stub the RPC. The public Sepolia endpoints are the same ones the apps use outside this skill.
