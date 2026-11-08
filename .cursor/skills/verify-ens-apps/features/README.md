@@ -35,5 +35,6 @@ Each feature file has an H1, one paragraph, and four H2 sections in order. `Sub-
 
 - [Check a name on Manager](./manager-check-availability.md) covers the landing field, the header field, and the registration quote for an available name.
 - [Search a name on Explorer](./portal-name-search.md) covers the hero combobox, the search dialog, and the available-name page.
+- [Sort address names by expiry](./portal-address-expiry-sort.md) covers the address names table Expiry control with a mocked name list.
 - [API worker health](./api-worker-health.md) covers `GET /health` on the local worker.
 - [Register a name on Manager](./manager-registration.md) covers the smoke-suite registration. It needs the e2e Docker stack.
