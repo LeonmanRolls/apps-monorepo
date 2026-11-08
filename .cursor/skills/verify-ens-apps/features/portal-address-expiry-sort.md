@@ -9,8 +9,9 @@ A visitor opens an address names table and sorts it by Expiry. Dated names come 
 
 ## How to get to it (user POV)
 
-- Open `http://127.0.0.1:3001/addr/0x1111111111111111111111111111111111111111/names`.
-- The heading contains **Names (6)**. The table lists the six fixture names.
+- The drive opens `http://127.0.0.1:3001/addr/0x1111111111111111111111111111111111111111/names` in its own Chromium and answers `https://sepolia.api.bigname.sh` with the six names.
+- The heading contains **Names (6)**. The table lists those names only inside that Chromium session.
+- A normal browser at the same URL does not install the mock. The page then asks live Sepolia and will not show this fixture.
 
 ## Driving it with verify-ens-apps
 
@@ -24,6 +25,9 @@ Preconditions:
 
 ## Gotchas
 
+- On a checkout whose Expiry column still sorts a null date as a value, this drive exits 1. The first click lists `dns.com`, then `sub.never.eth`, then the dated names. That failure is the bug. Do not change the expected order so an unfixed checkout passes.
+- On a checkout whose Expiry column keeps a missing expiry last in both directions, the drive exits 0 and `proof.json` matches the orders above.
+- The helper launches Chromium headless. It has no headed flag. The screenshots are the visual record.
 - The list is mocked. A pass does not prove the production address `0x225f137127d9067788314bc7fcc1f36746a3c3B5`.
 - `sub.parent.eth` has no expiry of its own. `parent.eth` is in the same list, and the row shows that parent's date.
 - `sub.never.eth` is an ENSv1 subname whose parent lookup returns no date. `dns.com` is a DNS name with no expiry. Both render after every dated name.
